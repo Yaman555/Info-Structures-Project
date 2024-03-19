@@ -1,0 +1,6 @@
+python-dotenv
+google-generativeai
+streamlit
+langchain
+reportlab
+PyPDF2
