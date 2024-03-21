@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 import google.generativeai as gen_ai
 from PyPDF2 import PdfReader
 from collections import deque  
+from langchain.text_splitter import RecursiveCharacterTextSplitter
 
 load_dotenv()
 
