@@ -13,7 +13,6 @@ st.set_page_config(
     page_title="Chat with Gemini-Pro!",
     page_icon="🤖",  
     layout="centered",  
-    initial_sidebar_state=None,
 )
 
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
