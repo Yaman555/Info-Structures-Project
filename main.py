@@ -1,6 +1,6 @@
 import os
 import streamlit as st
-from dotenv import load_dotenv
+from dotenv import load_dotenv 
 import google.generativeai as gen_ai
 from PyPDF2 import PdfReader
 import requests
@@ -122,12 +122,9 @@ elif uploaded_file:
 
         # Send each chunk to Gemini-Pro and get the response
         for chunk in text_chunks:
-            gemini_response = st.session_state.chat_session.send_message(chunk)
+            st.session_state.chat_session.send_message(chunk)
 
-            # Display Gemini-Pro's response
-            with st.chat_message("assistant"):
-                st.markdown(gemini_response.text)
-                chat_history.append({'role': 'model', 'text': gemini_response.text})
+            
 
 elif pdf_url:
     # Extract text from the PDF file at the URL
@@ -138,12 +135,9 @@ elif pdf_url:
 
         # Send each chunk to Gemini-Pro and get the response
         for chunk in text_chunks:
-            gemini_response = st.session_state.chat_session.send_message(chunk)
+            st.session_state.chat_session.send_message(chunk)
 
-            # Display Gemini-Pro's response
-            with st.chat_message("assistant"):
-                st.markdown(gemini_response.text)
-                chat_history.append({'role': 'model', 'text': gemini_response.text})
+    
 
 # Close the container
 st.markdown("</div>", unsafe_allow_html=True)
