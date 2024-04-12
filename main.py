@@ -1,6 +1,6 @@
 import os
 import streamlit as st
-from dotenv import load_dotenv 
+from dotenv import load_dotenv
 import google.generativeai as gen_ai
 from PyPDF2 import PdfReader
 import requests
@@ -32,6 +32,14 @@ def translate_role_for_streamlit(user_role):
         return "assistant"
     else:
         return user_role
+    
+def chunk_text(text, chunk_size=60000):
+    chunks = []
+    for i in range(0, len(text), chunk_size):
+        chunks.append(text[i:i+chunk_size])
+        chunks[-1]="!#@$%&^*"+chunks[-1]
+        chunks[-1]=chunks[-1].strip()
+    return chunks
 
 # Function to extract text from uploaded PDF file
 def extract_text_from_pdf(uploaded_file):
@@ -41,14 +49,9 @@ def extract_text_from_pdf(uploaded_file):
         reader = PdfReader(io.BytesIO(file_content))
         for page in reader.pages:
             text += page.extract_text()
-    return text.strip()
-
-# Function to split text into chunks
-def chunk_text(text, chunk_size=10000):
-    chunks = []
-    for i in range(0, len(text), chunk_size):
-        chunks.append(text[i:i+chunk_size])
+        chunks=chunk_text(text)
     return chunks
+
 
 # Function to download and extract text from PDF at URL
 def download_and_extract_pdf_text(url):
@@ -59,10 +62,11 @@ def download_and_extract_pdf_text(url):
             text = ""
             for page in reader.pages:
                 text += page.extract_text()
-            return text.strip()
+            return "!#@$%&^*"+text.strip()
     else:
         st.error(f"Failed to download PDF from URL: {url}")
         return None
+
 
 # Set the background color
 background_color = "#abdbe3" 
@@ -85,8 +89,9 @@ if "chat_session" not in st.session_state:
 # Display the chat history
 try:
     for message in st.session_state.chat_session.history:
-        with st.chat_message(translate_role_for_streamlit(message.role)):
-            st.markdown(message.parts[0].text)
+        if message.parts[0].text[:8]!="!#@$%&^*":
+            with st.chat_message(translate_role_for_streamlit(message.role)):
+                st.markdown(message.parts[0].text)
 except gen_ai.exceptions.StopCandidateException as e:
     # Reset the chat session if it reaches a stopping point
     st.session_state.chat_session = model.start_chat(history=[])
@@ -94,50 +99,70 @@ except gen_ai.exceptions.StopCandidateException as e:
 # Input field for user's message
 user_prompt = st.chat_input("Ask Gemini-Pro...")
 
-# Check if the user has uploaded a PDF file
-uploaded_file = st.file_uploader("Upload PDF file", type=["pdf"])
+
+
+
+
+col1, col2 = st.columns([3, 4])
+with col1:
+    pdf_url = st.text_input("Paste URL of a PDF file")  # Add an empty element to occupy minimal space for label
+with col2:
+    uploaded_file = st.file_uploader("Upload File", type=["pdf"], key="uploader1")
+
+
+# Usage (place at the bottom left corner)
+#uploaded_file = ("Upload File", key="uploader1", accept=["pdf"], bottom=0, left=0)
+
+
 
 # Check if the user has pasted a URL for a PDF file
-pdf_url = st.text_input("Paste URL of a PDF file")
+#pdf_url = st.text_input("Paste URL of a PDF file")
 
 if user_prompt:
-    # Add user's message to chat and display it
-    st.chat_message("user").markdown(user_prompt)
-    chat_history.append({'role': 'user', 'text': user_prompt})
-    
-    # Send user's prompt to Gemini-Pro and get the response
-    gemini_response = st.session_state.chat_session.send_message(user_prompt)
+        # Add user's message to chat and display it
+        st.chat_message("user").markdown(user_prompt)
+        chat_history.append({'role': 'user', 'text': user_prompt})
+        
+        # Send user's prompt to Gemini-Pro and get the response
+        gemini_response = st.session_state.chat_session.send_message(user_prompt)
 
-    # Display Gemini-Pro's response
-    with st.chat_message("assistant"):
-        st.markdown(gemini_response.text)
-        chat_history.append({'role': 'model', 'text': gemini_response.text})
+        # Display Gemini-Pro's response
+        with st.chat_message("assistant"):
+            st.markdown(gemini_response.text)
+            chat_history.append({'role': 'model', 'text': gemini_response.text})
 
 elif uploaded_file:
-    # Extract text from the uploaded PDF file
     uploaded_text = extract_text_from_pdf(uploaded_file)
+    
     if uploaded_text:
-        # Split the text into chunks
-        text_chunks = chunk_text(uploaded_text)
-
-        # Send each chunk to Gemini-Pro and get the response
-        for chunk in text_chunks:
-            st.session_state.chat_session.send_message(chunk)
-
+        for chunk in uploaded_text:
             
+            with st.spinner("Uploading file..."):
+            # Send uploaded text to Gemini-Pro
+                print("\n\n\n1111111111111")
+                #print(st.session_state)
+                gemini_response = st.session_state.chat_session.send_message(chunk)
+                #print("After\n\n\n")
+                #print(st.session_state)
+            st.session_state.chat_session.history[-1].parts[0].text="!#@$%&^*"
+            
+
+        # Display Gemini-Pro's response
+        with st.chat_message("assistant"):
+            st.markdown("File Uploaded")
+            chat_history.append({'role': 'user', 'text': "File Uploaded"})
+
 
 elif pdf_url:
     # Extract text from the PDF file at the URL
     uploaded_text_from_url = download_and_extract_pdf_text(pdf_url)
     if uploaded_text_from_url:
-        # Split the text into chunks
-        text_chunks = chunk_text(uploaded_text_from_url)
+        with st.spinner("Uploading file..."):       
+            st.session_state.chat_session.send_message(uploaded_text_from_url)
+        
+    with st.chat_message("assistant"):
+        st.markdown("File Uploaded")
 
-        # Send each chunk to Gemini-Pro and get the response
-        for chunk in text_chunks:
-            st.session_state.chat_session.send_message(chunk)
-
-    
-
+    st.session_state.chat_session.history[-1].parts[0].text="!#@$%&^*"
 # Close the container
 st.markdown("</div>", unsafe_allow_html=True)
